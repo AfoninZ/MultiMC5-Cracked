@@ -48,8 +48,57 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2.2.3
         with:
-          name: mmc-cracked-lin64
+          name: mmc-cracked-lin64-gcc
           path: /home/runner/MultiMC-Cracked
+
+  build-linux-clang:
+     name: build-linux-clang
+     runs-on: ubuntu-18.04
+
+     steps:
+       - uses: actions/checkout@v2.3.4
+         with:
+           submodules: 'recursive'
+
+       - name: Install Dependencies
+         run: |
+           sudo apt update
+           sudo apt install openjdk-8-jdk libgl1-mesa-dev qt5-default
+           sudo apt --purge remove gcc g++
+
+       - name: Get latest Clang
+         run: sudo apt install clang-12 clang clang-11 libomp5
+
+       - name: Clone and set Clang as default
+         run: |
+           mkdir ~/MultiMC
+           cd ~/MultiMC
+           mkdir build
+           mkdir MultiMC
+           sudo update-alternatives --config c++
+       - name: Build
+         run: |
+           cd ~/MultiMC/build
+           cmake -DCMAKE_INSTALL_PREFIX=../MultiMC -DCMAKE_BUILD_TYPE=Release -DMultiMC_NOTIFICATION_URL:STRING=https://files.multimc.org/notifications.json -DMultiMC_CHANLIST_URL=https://files.multimc.org/update/lin64/channels.json -DMultiMC_PASTE_EE_API_KEY:STRING=utLvciUouSURFzfjPxLBf5W4ISsUX4pwBDF7N1AfZ -DMultiMC_ANALYTICS_ID:STRING=UA-87731965-2 -DMultiMC_LAYOUT=lin-nodeps -DMultiMC_VERSION_BUILD=$(curl https://teamcity.multimc.org/guestAuth/app/rest/buildTypes/MultiMC_Launcher_Linux64_Build/builds/status:success/number) -DMultiMC_BUILD_PLATFORM=lin64 $GITHUB_WORKSPACE
+       - name: Compile
+         run: |
+           cd ~/MultiMC/build
+           make tcversion
+           make -j$(nproc)
+       - name: Test
+         run: |
+           cd ~/MultiMC/build
+           make test
+           cmake -E remove_directory "/home/runner/MultiMC/MultiMC"
+       - name: Install
+         run: |
+           cd ~/MultiMC/build
+           make install
+       - name: Upload Artifacts
+         uses: actions/upload-artifact@v2.2.3
+         with:
+           name: mmc-cracked-lin64-clang
+           path: /home/runner/MultiMC/MultiMC
 
   build-windows:
     name: build-windows
@@ -185,5 +234,5 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v2.2.3
         with:
-          name: mmc-cracked-win32
+          name: mmc-cracked-win32-gcc
           path: "D:/MultiMC-Cracked"
